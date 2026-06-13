@@ -17,7 +17,7 @@ export class Contact {
     @Column()
     phone: string;
 
-    @Column({ nullable: true })
+    @Column()
     note: string;
 
     @Column({ default: false })

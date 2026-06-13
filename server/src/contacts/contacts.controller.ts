@@ -5,7 +5,7 @@ import { UpdateContactDto } from './dto/update-contact.dto';
 
 @Controller('contacts')
 export class ContactsController {
-  constructor(private readonly contactsService: ContactsService) {}
+  constructor(private readonly contactsService: ContactsService) { }
 
   @Post()
   create(@Body() createContactDto: CreateContactDto) {
@@ -15,11 +15,6 @@ export class ContactsController {
   @Get()
   findAll() {
     return this.contactsService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.contactsService.findOne(+id);
   }
 
   @Patch(':id')
