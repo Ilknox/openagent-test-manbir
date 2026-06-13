@@ -1,16 +1,22 @@
+import ContactsGrid from "@/components/admin/ContactsGrid";
+
 export default function AdminPage() {
   return (
-    <div className="max-w-[1180px] mx-auto px-[clamp(20px,5vw,56px)] py-16">
-      <span className="inline-flex items-center gap-2 text-[13px] font-bold tracking-[0.08em] uppercase text-[var(--color-green-700)] bg-[var(--color-green-tint)] px-[13px] py-[7px] rounded-full mb-5">
-        <span className="w-[7px] h-[7px] rounded-full bg-[var(--color-green)]" />
-        Admin
-      </span>
-      <h1 className="m-0 text-[clamp(2rem,4vw,3rem)] font-extrabold tracking-[-0.03em] text-[var(--color-ink)]">
-        Admin Dashboard
-      </h1>
-      <p className="mt-4 text-[1.1rem] text-[var(--color-ink-soft)] max-w-[480px]">
-        Admin content coming soon.
-      </p>
+    <div className="bg-[var(--color-surface)] min-h-[calc(100vh-78px)] pb-[clamp(40px,6vw,80px)]">
+      <div className="max-w-[1180px] mx-auto px-[clamp(20px,5vw,56px)]">
+
+        {/* Page header */}
+        <div className="pt-[clamp(28px,4vw,48px)] pb-[clamp(18px,2.5vw,26px)]">
+          <h1 className="m-0 text-[clamp(1.9rem,3.4vw,2.6rem)] font-extrabold tracking-[-0.03em] text-[var(--color-ink)]">
+            Contact submissions
+          </h1>
+          <p className="mt-[9px] mb-0 text-[var(--color-muted)] text-[1.05rem]">
+            Review enquiries from the contact form, verify customers and remove records.
+          </p>
+        </div>
+
+        <ContactsGrid />
+      </div>
     </div>
   );
 }

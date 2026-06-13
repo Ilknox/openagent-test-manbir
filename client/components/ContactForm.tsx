@@ -35,8 +35,13 @@ function validateField(name: keyof FormValues, value: string): string {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()))
         return "Please enter a valid email address.";
       return "";
-    case "msg":
-      return value.trim() ? "" : "Please let us know how we can help.";
+    case "msg": {
+      if (!value.trim()) return "Please let us know how we can help.";
+      if (value.length > 4000) return `Please keep your message under 4,000 characters (currently ${value.length}).`;
+      const words = value.trim().split(/\s+/).filter(Boolean).length;
+      if (words > 500) return `Please keep your message under 500 words (currently ${words}).`;
+      return "";
+    }
     case "phone": {
       // User types the national portion only (e.g. "412 345 678" or "0412 345 678").
       // Strip spaces then accept: optional leading 0 + valid AU prefix (2,3,4,7,8) + 8 digits.
@@ -86,6 +91,8 @@ interface FieldProps {
   autoComplete?: string;
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   textarea?: boolean;
+  maxWords?: number;
+  maxChars?: number;
   prefix?: React.ReactNode;
   value: string;
   error?: string;
@@ -101,6 +108,8 @@ function Field({
   autoComplete,
   inputMode,
   textarea,
+  maxWords,
+  maxChars,
   prefix,
   value,
   error,
@@ -124,17 +133,19 @@ function Field({
       </label>
 
       {textarea ? (
-        <textarea
-          id={name}
-          name={name}
-          placeholder={placeholder}
-          value={value}
-          autoComplete={autoComplete}
-          onChange={(e) => onChange(name, e.target.value)}
-          aria-describedby={error ? `${name}-error` : undefined}
-          aria-invalid={!!error}
-          className={`${inputClass} resize-y min-h-[132px] leading-[1.5]`}
-        />
+        <>
+          <textarea
+            id={name}
+            name={name}
+            placeholder={placeholder}
+            value={value}
+            autoComplete={autoComplete}
+            onChange={(e) => onChange(name, e.target.value)}
+            aria-describedby={error ? `${name}-error` : undefined}
+            aria-invalid={!!error}
+            className={`${inputClass} resize-y min-h-[132px] leading-[1.5]`}
+          />
+        </>
       ) : prefix ? (
         <div
           className={[
@@ -272,7 +283,7 @@ export default function ContactForm() {
           placeholder="400 000 000" autoComplete="tel" inputMode="tel"
           value={values.phone} error={errors.phone} onChange={handleChange} />
 
-        <Field name="msg" label="What would you like to talk about?" required textarea
+        <Field name="msg" label="What would you like to talk about?" required textarea maxWords={500} maxChars={4000}
           placeholder="Tell us a little about what you need…"
           value={values.msg} error={errors.msg} onChange={handleChange} />
 

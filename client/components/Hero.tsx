@@ -7,7 +7,7 @@ export default function Hero() {
       </span>
 
       <h1 className="m-0 text-[clamp(2.3rem,5.4vw,4rem)] font-extrabold leading-[1.04] tracking-[-0.03em] text-balance">
-        Let&rsquo;s talk &mdash;{" "}
+        Contact us, {" "}
         <span className="text-[var(--color-green-700)]">we&rsquo;re here to help.</span>
       </h1>
 

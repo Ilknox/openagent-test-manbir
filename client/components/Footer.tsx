@@ -2,25 +2,25 @@ import Link from "next/link";
 import { PhoneIcon } from "./icons/Icons";
 
 const COLS = [
-  { title: "Company",  links: ["About us", "Careers", "Media & Press", "Reviews"] },
-  { title: "Services", links: ["Find an agent", "Property report", "Sell your home"] },
-  { title: "Support",  links: ["Contact us", "Help centre", "FAQs"] },
+  { title: "Company",  links: [{ label: "About us" }, { label: "Careers" }, { label: "Media & Press" }, { label: "Reviews" }] },
+  { title: "Services", links: [{ label: "Find an agent" }, { label: "Property report" }, { label: "Sell your home" }] },
+  { title: "Support",  links: [{ label: "Contact us", href: "/" }, { label: "Help centre" }, { label: "FAQs" }] },
 ];
 
-function FootCol({ title, links }: { title: string; links: string[] }) {
+function FootCol({ title, links }: { title: string; links: { label: string; href?: string }[] }) {
   return (
     <nav>
       <h4 className="mt-0.5 mb-4 text-[12.5px] font-bold tracking-[0.08em] uppercase text-[var(--color-muted)]">
         {title}
       </h4>
       <ul className="list-none m-0 p-0 grid gap-[11px]">
-        {links.map((l) => (
-          <li key={l}>
+        {links.map(({ label, href }) => (
+          <li key={label}>
             <Link
-              href="#"
+              href={href ?? "#"}
               className="no-underline text-[var(--color-ink-soft)] text-[0.98rem] font-medium hover:text-[var(--color-green-700)] transition-colors duration-150"
             >
-              {l}
+              {label}
             </Link>
           </li>
         ))}
