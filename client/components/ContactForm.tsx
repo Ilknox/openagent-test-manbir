@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowIcon } from "./icons/Icons";
 import { API_URL } from "@/lib/api";
@@ -197,7 +198,7 @@ export default function ContactForm() {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
+  const router = useRouter();
 
   // Re-validate a field only if it already has an error (clears as user corrects).
   function handleChange(name: string, value: string) {
@@ -233,7 +234,7 @@ export default function ContactForm() {
           note: values.msg.trim(),
         }),
       });
-      setSent(true);
+      router.push(`/thank-you?name=${encodeURIComponent(values.first.trim())}`);
     } catch {
       setErrors({ msg: "Something went wrong. Please try again." });
     } finally {
@@ -249,24 +250,6 @@ export default function ContactForm() {
       +61
     </>
   );
-
-  if (sent) {
-    return (
-      <section className="bg-[var(--color-surface)] border border-[var(--color-line)] rounded-[22px] p-[clamp(26px,3.4vw,42px)] lg:sticky lg:top-7">
-        <div className="text-center py-6 px-2">
-          <div className="w-[72px] h-[72px] rounded-full bg-[var(--color-green-tint)] grid place-items-center mx-auto mb-5">
-            <svg className="w-[34px] h-[34px] stroke-[var(--color-green-700)]" viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m5 13 4 4L19 7" />
-            </svg>
-          </div>
-          <h3 className="m-0 mb-2 text-[1.55rem] font-extrabold tracking-[-0.02em]">Message sent!</h3>
-          <p className="m-0 mx-auto text-[var(--color-ink-soft)] max-w-[340px] text-[1.02rem]">
-            Thanks for reaching out — one of our team will be in touch with you very shortly.
-          </p>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section className="bg-[var(--color-surface)] border border-[var(--color-line)] rounded-[22px] p-[clamp(26px,3.4vw,42px)] lg:sticky lg:top-7">
