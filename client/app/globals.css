@@ -1,0 +1,41 @@
+@import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap");
+
+@theme inline {
+  --color-ink:          #14181f;
+  --color-ink-soft:     #3d4651;
+  --color-muted:        #6b7480;
+  --color-line:         #e7eae8;
+  --color-line-2:       #d9ddda;
+  --color-surface:      #f6f8f6;
+
+  --color-green:        #14ae5c;
+  --color-green-700:    #0e8f4a;
+  --color-green-800:    #0b7a3f;
+  --color-green-tint:   #e9f7ee;
+  --color-green-tint2:  #d6efdf;
+
+  --font-sans: "Hanken Grotesk", system-ui, -apple-system, sans-serif;
+
+  --ease-smooth: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background: #ffffff;
+  line-height: 1.55;
+}
