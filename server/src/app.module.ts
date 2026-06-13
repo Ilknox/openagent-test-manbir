@@ -7,7 +7,7 @@ import { Contact } from './contacts/entities/contact.entity';
   imports: [
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
-      database: 'contacts.db',
+      database: 'data/contacts.db',
       entities: [Contact],
       synchronize: true,
     }),
