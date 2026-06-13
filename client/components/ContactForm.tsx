@@ -3,6 +3,78 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowIcon } from "./icons/Icons";
+import { API_URL } from "@/lib/api";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type FormValues = {
+  first: string;
+  last: string;
+  email: string;
+  phone: string;
+  msg: string;
+};
+
+type FormErrors = Partial<Record<keyof FormValues, string>>;
+
+// ─── Validation ───────────────────────────────────────────────────────────────
+
+function validateField(name: keyof FormValues, value: string): string {
+  switch (name) {
+    case "first":
+      if (!value.trim()) return "Please enter your first name.";
+      if (/\d/.test(value)) return "First name must not contain numbers.";
+      return "";
+    case "last":
+      if (!value.trim()) return "Please enter your last name.";
+      if (/\d/.test(value)) return "Last name must not contain numbers.";
+      return "";
+    case "email":
+      if (!value.trim()) return "Please enter your email address.";
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()))
+        return "Please enter a valid email address.";
+      return "";
+    case "msg":
+      return value.trim() ? "" : "Please let us know how we can help.";
+    case "phone": {
+      // User types the national portion only (e.g. "412 345 678" or "0412 345 678").
+      // Strip spaces then accept: optional leading 0 + valid AU prefix (2,3,4,7,8) + 8 digits.
+      const digits = value.replace(/\s/g, "");
+      if (!digits) return "Please enter your phone number.";
+      if (!/^0?[2-478]\d{8}$/.test(digits))
+        return "Enter a valid Australian phone number (e.g. 412 345 678).";
+      return "";
+    }
+  }
+}
+
+function validateAll(values: FormValues): FormErrors {
+  const errors: FormErrors = {};
+  (Object.keys(values) as (keyof FormValues)[]).forEach((key) => {
+    const msg = validateField(key, values[key]);
+    if (msg) errors[key] = msg;
+  });
+  return errors;
+}
+
+// ─── Phone normalization ───────────────────────────────────────────────────────
+//
+// The user types only the national portion after the fixed "+61" prefix chip.
+// We strip spaces, drop any leading 0 (since +61 already replaces the trunk prefix),
+// then produce "+61 XXXXXXXXX" — a format the backend regex accepts:
+//   /^(\+?61\s?0?|0)[2-478]\d{8}$/
+//
+// Examples:
+//   "412 345 678"  → "+61 412345678"
+//   "0412 345 678" → "+61 412345678"  (leading 0 stripped)
+
+function normalizePhone(raw: string): string {
+  const digits = raw.replace(/\s/g, "");
+  const national = digits.startsWith("0") ? digits.slice(1) : digits;
+  return `+61 ${national}`;
+}
+
+// ─── Field component ──────────────────────────────────────────────────────────
 
 interface FieldProps {
   name: string;
@@ -15,6 +87,7 @@ interface FieldProps {
   textarea?: boolean;
   prefix?: React.ReactNode;
   value: string;
+  error?: string;
   onChange: (name: string, value: string) => void;
 }
 
@@ -29,10 +102,19 @@ function Field({
   textarea,
   prefix,
   value,
+  error,
   onChange,
 }: FieldProps) {
-  const inputClass =
-    "font-sans text-base text-[var(--color-ink)] bg-white border-[1.5px] border-[var(--color-line-2)] rounded-xl px-4 py-[14px] w-full transition-all duration-150 placeholder:text-[#9aa3a0] hover:border-[#c2c8c4] focus:outline-none focus:border-[var(--color-green)] focus:shadow-[0_0_0_4px_var(--color-green-tint)]";
+  const baseInput =
+    "font-sans text-base text-[var(--color-ink)] bg-white rounded-xl px-4 py-[14px] w-full transition-all duration-150 placeholder:text-[#9aa3a0] focus:outline-none";
+
+  const borderOk =
+    "border-[1.5px] border-[var(--color-line-2)] hover:border-[#c2c8c4] focus:border-[var(--color-green)] focus:shadow-[0_0_0_4px_var(--color-green-tint)]";
+
+  const borderErr =
+    "border-[1.5px] border-[#e0564f] shadow-[0_0_0_4px_rgba(224,86,79,0.12)] focus:border-[#e0564f] focus:shadow-[0_0_0_4px_rgba(224,86,79,0.12)]";
+
+  const inputClass = `${baseInput} ${error ? borderErr : borderOk}`;
 
   return (
     <div className="flex flex-col">
@@ -48,10 +130,19 @@ function Field({
           value={value}
           autoComplete={autoComplete}
           onChange={(e) => onChange(name, e.target.value)}
+          aria-describedby={error ? `${name}-error` : undefined}
+          aria-invalid={!!error}
           className={`${inputClass} resize-y min-h-[132px] leading-[1.5]`}
         />
       ) : prefix ? (
-        <div className="flex items-stretch border-[1.5px] border-[var(--color-line-2)] rounded-xl bg-white transition-all duration-150 hover:border-[#c2c8c4] focus-within:border-[var(--color-green)] focus-within:shadow-[0_0_0_4px_var(--color-green-tint)]">
+        <div
+          className={[
+            "flex items-stretch rounded-xl bg-white transition-all duration-150",
+            error
+              ? "border-[1.5px] border-[#e0564f] shadow-[0_0_0_4px_rgba(224,86,79,0.12)]"
+              : "border-[1.5px] border-[var(--color-line-2)] hover:border-[#c2c8c4] focus-within:border-[var(--color-green)] focus-within:shadow-[0_0_0_4px_var(--color-green-tint)]",
+          ].join(" ")}
+        >
           <span className="flex items-center gap-2 px-[14px] text-base font-bold text-[var(--color-ink-soft)] bg-[var(--color-surface)] border-r border-[var(--color-line-2)] rounded-l-[11px] whitespace-nowrap">
             {prefix}
           </span>
@@ -64,6 +155,8 @@ function Field({
             autoComplete={autoComplete}
             inputMode={inputMode}
             onChange={(e) => onChange(name, e.target.value)}
+            aria-describedby={error ? `${name}-error` : undefined}
+            aria-invalid={!!error}
             className="font-sans text-base text-[var(--color-ink)] bg-white rounded-r-xl px-4 py-[14px] w-full focus:outline-none placeholder:text-[#9aa3a0]"
           />
         </div>
@@ -77,24 +170,75 @@ function Field({
           autoComplete={autoComplete}
           inputMode={inputMode}
           onChange={(e) => onChange(name, e.target.value)}
+          aria-describedby={error ? `${name}-error` : undefined}
+          aria-invalid={!!error}
           className={inputClass}
         />
+      )}
+
+      {error && (
+        <span id={`${name}-error`} role="alert" className="mt-1.5 text-[12.5px] font-semibold text-[#d8463f]">
+          {error}
+        </span>
       )}
     </div>
   );
 }
 
+// ─── Form ─────────────────────────────────────────────────────────────────────
+
 export default function ContactForm() {
-  const [values, setValues] = useState({
+  const [values, setValues] = useState<FormValues>({
     first: "",
     last: "",
     email: "",
     phone: "",
     msg: "",
   });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
 
+  // Re-validate a field only if it already has an error (clears as user corrects).
   function handleChange(name: string, value: string) {
     setValues((v) => ({ ...v, [name]: value }));
+    if (errors[name as keyof FormValues]) {
+      const msg = validateField(name as keyof FormValues, value);
+      setErrors((e) => ({ ...e, [name]: msg }));
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    const next = validateAll(values);
+    if (Object.keys(next).length) {
+      setErrors(next);
+      // Focus the first invalid field
+      const firstInvalid = document.querySelector<HTMLElement>("[aria-invalid='true']");
+      firstInvalid?.focus();
+      return;
+    }
+
+    setSending(true);
+    try {
+      await fetch(`${API_URL}/contacts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: values.first.trim(),
+          lastName: values.last.trim(),
+          email: values.email.trim(),
+          phone: normalizePhone(values.phone),  // "+61 XXXXXXXXX"
+          note: values.msg.trim(),
+        }),
+      });
+      setSent(true);
+    } catch {
+      setErrors({ msg: "Something went wrong. Please try again." });
+    } finally {
+      setSending(false);
+    }
   }
 
   const auPrefix = (
@@ -106,30 +250,56 @@ export default function ContactForm() {
     </>
   );
 
+  if (sent) {
+    return (
+      <section className="bg-[var(--color-surface)] border border-[var(--color-line)] rounded-[22px] p-[clamp(26px,3.4vw,42px)] lg:sticky lg:top-7">
+        <div className="text-center py-6 px-2">
+          <div className="w-[72px] h-[72px] rounded-full bg-[var(--color-green-tint)] grid place-items-center mx-auto mb-5">
+            <svg className="w-[34px] h-[34px] stroke-[var(--color-green-700)]" viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m5 13 4 4L19 7" />
+            </svg>
+          </div>
+          <h3 className="m-0 mb-2 text-[1.55rem] font-extrabold tracking-[-0.02em]">Message sent!</h3>
+          <p className="m-0 mx-auto text-[var(--color-ink-soft)] max-w-[340px] text-[1.02rem]">
+            Thanks for reaching out — one of our team will be in touch with you very shortly.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="bg-[var(--color-surface)] border border-[var(--color-line)] rounded-[22px] p-[clamp(26px,3.4vw,42px)] lg:sticky lg:top-7">
       <p className="text-[1.18rem] font-bold tracking-[-0.01em] leading-[1.4] m-0 mb-[26px] text-[var(--color-ink)]">
         Fill in your details and we&rsquo;ll be in touch right away.
       </p>
 
-      <form onSubmit={(e) => e.preventDefault()} noValidate className="grid gap-4">
+      <form onSubmit={handleSubmit} noValidate className="grid gap-4">
         <div className="grid grid-cols-2 gap-4 max-[480px]:grid-cols-1">
-          <Field name="first" label="First name" required placeholder="Jane" autoComplete="given-name" value={values.first} onChange={handleChange} />
-          <Field name="last"  label="Last name"  required placeholder="Doe"  autoComplete="family-name" value={values.last}  onChange={handleChange} />
+          <Field name="first" label="First name" required placeholder="Jane" autoComplete="given-name"
+            value={values.first} error={errors.first} onChange={handleChange} />
+          <Field name="last" label="Last name" required placeholder="Doe" autoComplete="family-name"
+            value={values.last} error={errors.last} onChange={handleChange} />
         </div>
 
-        <Field name="email" label="Email address" type="email" required placeholder="jane@email.com" autoComplete="email" value={values.email} onChange={handleChange} />
+        <Field name="email" label="Email address" type="email" required placeholder="jane@email.com" autoComplete="email"
+          value={values.email} error={errors.email} onChange={handleChange} />
 
-        <Field name="phone" label="Phone number" type="tel" required prefix={auPrefix} placeholder="400 000 000" autoComplete="tel" inputMode="tel" value={values.phone} onChange={handleChange} />
+        <Field name="phone" label="Phone number" type="tel" required prefix={auPrefix}
+          placeholder="400 000 000" autoComplete="tel" inputMode="tel"
+          value={values.phone} error={errors.phone} onChange={handleChange} />
 
-        <Field name="msg" label="What would you like to talk about?" required textarea placeholder="Tell us a little about what you need…" value={values.msg} onChange={handleChange} />
+        <Field name="msg" label="What would you like to talk about?" required textarea
+          placeholder="Tell us a little about what you need…"
+          value={values.msg} error={errors.msg} onChange={handleChange} />
 
         <button
           type="submit"
-          className="mt-1.5 inline-flex items-center justify-center gap-2.5 font-bold text-base tracking-[0.02em] text-white bg-[var(--color-green)] border-none rounded-[13px] px-6 py-[17px] cursor-pointer shadow-[0_10px_24px_-10px_rgba(14,142,74,0.6)] hover:bg-[var(--color-green-700)] hover:-translate-y-0.5 hover:shadow-[0_16px_30px_-12px_rgba(14,142,74,0.65)] active:translate-y-0 transition-all duration-150 group"
+          disabled={sending}
+          className="mt-1.5 inline-flex items-center justify-center gap-2.5 font-bold text-base tracking-[0.02em] text-white bg-[var(--color-green)] border-none rounded-[13px] px-6 py-[17px] cursor-pointer shadow-[0_10px_24px_-10px_rgba(14,142,74,0.6)] hover:bg-[var(--color-green-700)] hover:-translate-y-0.5 hover:shadow-[0_16px_30px_-12px_rgba(14,142,74,0.65)] active:translate-y-0 transition-all duration-150 group disabled:opacity-60 disabled:cursor-default disabled:transform-none disabled:shadow-none"
         >
-          Send message
-          <ArrowIcon className="w-[18px] h-[18px] group-hover:translate-x-[3px] transition-transform duration-150" />
+          {sending ? "Sending…" : "Send message"}
+          {!sending && <ArrowIcon className="w-[18px] h-[18px] group-hover:translate-x-[3px] transition-transform duration-150" />}
         </button>
 
         <p className="mt-4 mb-0 text-[13.5px] text-[var(--color-muted)] leading-[1.55]">
